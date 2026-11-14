@@ -328,7 +328,7 @@ def _async_migrate_container_entity_registry(
                 break
             parent_device = device_registry.async_get(parent_device_id)
             if parent_device is None:
-                raise ValueError(f"Container device {device.id} has a missing parent")
+                break
             endpoint_device = parent_device
 
         endpoint_id = None
@@ -340,6 +340,14 @@ def _async_migrate_container_entity_registry(
             if suffix.isdigit():
                 endpoint_id = suffix
                 break
+        if endpoint_id is None and device.config_subentry_id is not None:
+            subentry = entry.subentries.get(device.config_subentry_id)
+            if subentry is not None and (
+                subentry.subentry_type == SUBENTRY_TYPE_ENVIRONMENT
+                and subentry.unique_id is not None
+                and subentry.unique_id.isdigit()
+            ):
+                endpoint_id = subentry.unique_id
         if endpoint_id is None:
             raise ValueError(
                 f"Could not determine the endpoint for container device {device.id}"
