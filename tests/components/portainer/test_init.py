@@ -780,30 +780,30 @@ async def test_migration_v5_avoids_cross_device_unique_id_conflicts(
 async def test_duplicate_container_names_across_endpoints(
     hass: HomeAssistant,
     mock_portainer_client: AsyncMock,
-    mock_config_entry: MockConfigEntry,
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test same-named containers on separate endpoints have distinct entities."""
     await _mock_duplicate_container_names(hass, mock_portainer_client)
+    entry = _create_v5_config_entry()
 
-    await setup_integration(hass, mock_config_entry)
+    await setup_integration(hass, entry)
 
     entries = er.async_entries_for_config_entry(
-        entity_registry, mock_config_entry.entry_id
+        entity_registry, entry.entry_id
     )
     entities_by_endpoint = {
         endpoint_id: {
             (
                 entity.domain,
                 entity.unique_id.removeprefix(
-                    f"{mock_config_entry.entry_id}_{endpoint_id}_"
+                    f"{entry.entry_id}_{endpoint_id}_"
                 ),
             )
             for entity in entries
             if entity.unique_id.startswith(
                 (
-                    f"{mock_config_entry.entry_id}_{endpoint_id}_alloy_",
-                    f"{mock_config_entry.entry_id}_{endpoint_id}_frost-eventlog_",
+                    f"{entry.entry_id}_{endpoint_id}_alloy_",
+                    f"{entry.entry_id}_{endpoint_id}_frost-eventlog_",
                 )
             )
         }
