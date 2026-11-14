@@ -29,7 +29,11 @@ from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
-from homeassistant.helpers.device_registry import AnyDeviceEntry, DeviceEntry
+from homeassistant.helpers.device_registry import (
+    AnyDeviceEntry,
+    ChildDeviceEntry,
+    DeviceEntry,
+)
 import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
@@ -313,16 +317,19 @@ def _async_migrate_container_entity_registry(
         if device.model != "Container":
             continue
 
-        endpoint_device = device
-        while endpoint_device.via_device_id is not None:
-            parent_device = device_registry.async_get(endpoint_device.via_device_id)
-            if parent_device is None:
-                break
-            endpoint_device = parent_device
-        if endpoint_device.via_device_id is not None:
-            raise ValueError(
-                f"Container device {device.id} has a missing parent device"
+        endpoint_device: AnyDeviceEntry = device
+        while True:
+            parent_device_id = (
+                endpoint_device.parent_device_id
+                if isinstance(endpoint_device, ChildDeviceEntry)
+                else endpoint_device.via_device_id
             )
+            if parent_device_id is None:
+                break
+            parent_device = device_registry.async_get(parent_device_id)
+            if parent_device is None:
+                raise ValueError(f"Container device {device.id} has a missing parent")
+            endpoint_device = parent_device
 
         endpoint_id = None
         for domain, identifier in endpoint_device.identifiers:

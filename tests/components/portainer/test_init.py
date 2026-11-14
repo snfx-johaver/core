@@ -40,7 +40,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.setup import async_setup_component
 
-from . import async_migrate_entry, setup_integration
+from . import setup_integration
 from .conftest import MOCK_TEST_CONFIG, TEST_INSTANCE_ID
 
 
@@ -609,10 +609,12 @@ async def test_migration_v5_preserves_legacy_entity(
 
 async def test_migration_v5_uses_parent_endpoint_for_numeric_container_name(
     hass: HomeAssistant,
+    mock_portainer_client: AsyncMock,
     device_registry: dr.DeviceRegistry,
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test a legacy device identifier cannot be mistaken for its endpoint."""
+    await _mock_duplicate_container_names(hass, mock_portainer_client)
     entry = _create_v5_config_entry()
     entry.add_to_hass(hass)
 
@@ -643,7 +645,8 @@ async def test_migration_v5_uses_parent_endpoint_for_numeric_container_name(
         original_name="Container",
     )
 
-    await async_migrate_entry(hass, entry)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
 
     migrated_entity = entity_registry.async_get(legacy_entity.entity_id)
     assert migrated_entity is not None
@@ -653,10 +656,12 @@ async def test_migration_v5_uses_parent_endpoint_for_numeric_container_name(
 
 async def test_migration_v5_skips_endpoint_aware_numeric_container_name(
     hass: HomeAssistant,
+    mock_portainer_client: AsyncMock,
     device_registry: dr.DeviceRegistry,
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test endpoint-aware IDs are not mistaken for legacy IDs."""
+    await _mock_duplicate_container_names(hass, mock_portainer_client)
     entry = _create_v5_config_entry()
     entry.add_to_hass(hass)
 
@@ -684,7 +689,8 @@ async def test_migration_v5_skips_endpoint_aware_numeric_container_name(
         original_name="Container",
     )
 
-    await async_migrate_entry(hass, entry)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
 
     migrated_entity = entity_registry.async_get(endpoint_aware_entity.entity_id)
     assert migrated_entity is not None
