@@ -841,16 +841,12 @@ async def test_duplicate_container_names_across_endpoints(
 
     await setup_integration(hass, entry)
 
-    entries = er.async_entries_for_config_entry(
-        entity_registry, entry.entry_id
-    )
+    entries = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
     entities_by_endpoint = {
         endpoint_id: {
             (
                 entity.domain,
-                entity.unique_id.removeprefix(
-                    f"{entry.entry_id}_{endpoint_id}_"
-                ),
+                entity.unique_id.removeprefix(f"{entry.entry_id}_{endpoint_id}_"),
             )
             for entity in entries
             if entity.unique_id.startswith(
